@@ -1,1 +1,69 @@
+name: Render Short (EdgeTTS + FFmpeg)
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "Unique job id"
+        required: true
+        type: string
+      topic:
+        description: "Topic/title"
+        required: true
+        type: string
+      script:
+        description: "Narration script"
+        required: true
+        type: string
+      provider:
+        description: "Video provider: PEXELS | PIXABAY | BOTH"
+        required: false
+        default: "BOTH"
+        type: string
+      voice:
+        description: "EdgeTTS voice name"
+        required: false
+        default: "en-US-AriaNeural"
+        type: string
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Render
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+          TOPIC: ${{ inputs.topic }}
+          SCRIPT: ${{ inputs.script }}
+          PROVIDER: ${{ inputs.provider }}
+          VOICE: ${{ inputs.voice }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+        run: |
+          python scripts/render.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-${{ inputs.job_id }}
+          path: out/final.mp4
+          if-no-files-found: error
 
